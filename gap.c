@@ -412,9 +412,9 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     isAssigned[minJob] = 1;
   }
 
-  printf("Flag");
-  for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
-  printf("\n");
+  // printf("Flag");
+  // for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
+  // printf("\n");
   // printf("bestsol\n");
   // for (int i = 0; i < gapdata->n; ++i){
   //   printf("job[%d] %d\n", i,vdata->bestsol[i]);
