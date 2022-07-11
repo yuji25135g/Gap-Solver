@@ -64,6 +64,11 @@ typedef struct {
   int current; /* current position */
 } Agent;
 
+typedef struct {
+  int *sol; 
+  int value;
+} Sol;
+
 /*************************** functions ***************************************/
 void copy_parameters(int argc, char *arcv[], Param *param);
 void read_instance(GAPdata *gapdata);
@@ -109,6 +114,37 @@ void recompute_cost(Vdata *vdata, GAPdata *gapdata)
 	 vdata->starttime - vdata->timebrid);
 
   free((void *) rest_b);
+}
+
+int check_feasibility(Sol *sol, GAPdata *gapdata) {
+  int	i, j;		/* indices of agents and jobs */
+  int	*rest_b;	/* the amount of resource available at each agent */
+  int	cost, penal;	/* the cost; the penalty = the total capacity excess */
+  int	temp;		/* temporary variable */
+
+  rest_b = (int *) malloc_e(gapdata->m * sizeof(int));
+  cost = penal = 0;
+  for(i=0; i<gapdata->m; i++){rest_b[i] = gapdata->b[i];}
+  for(j=0; j<gapdata->n; j++){
+    rest_b[sol->sol[j]] -= gapdata->a[sol->sol[j]][j];
+    cost += gapdata->c[sol->sol[j]][j];
+  }
+  for(i=0; i<gapdata->m; i++){
+    temp = rest_b[i];
+    if(temp<0){penal -= temp;}
+  }
+  printf("recomputed cost = %d\n", cost);
+  if(penal>0){
+    printf("INFEASIBLE!!\n");
+    printf(" resource left:");
+    for(i=0; i<gapdata->m; i++){printf(" %3d", rest_b[i]);}
+    printf("\n");
+    return 0;
+  } else{
+    return 1;
+  }
+
+    free((void *) rest_b);
 }
 
 /***** read a solution from STDIN ********************************************/
@@ -343,7 +379,21 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
 	vdata->bestsol[3] = 0.
   */
 
-  //Flagの作成
+
+  //実行可能解の中で評価間数値が最小となる解
+  Sol feasopt;
+  feasopt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
+  feasopt.value = 0;
+  //評価間数値が最小となる解
+  Sol opt;
+  opt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
+  opt.value = 0;
+  //現在の解
+  Sol current;
+  current.sol = (int*) malloc_e(gapdata->n * sizeof(int));
+  current.value = 0;
+
+  //Flagの作成(jobが割り当てられたかの確認)
   int* isAssigned = (int*) malloc_e(gapdata->n * sizeof(int));
   for (int i = 0; i < gapdata->n; ++i){
     isAssigned[i] = 0;
@@ -395,10 +445,11 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       agent[minAgent].current += 1;
     }
 
-    //bestsolに割当
+    //opt->solに割当
     int minJob = agent[minAgent].aind[agent[minAgent].current];
     // printf("\nminAgent = %d minJob = %d\n", minAgent, minJob);
-    vdata->bestsol[minJob] = minAgent;
+    opt.sol[minJob] = minAgent;
+    current.sol[minJob] = minAgent;
 
     //bresの再計算
     agent[minAgent].bres = agent[minAgent].bres - agent[minAgent].aagt[minJob];
@@ -412,6 +463,18 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     isAssigned[minJob] = 1;
   }
 
+  //実行可能解であれば、解を保存する
+  if (check_feasibility(&current, gapdata)){
+    for (int i = 0; i < gapdata->n; ++i){
+      feasopt.sol[i] = opt.sol[i];
+    }
+  }
+
+  //最適解の割当
+  for (int i = 0; i < gapdata->n; ++i){
+    vdata->bestsol[i] = opt.sol[i]; //局所探索が実装できたらfeasoptにする
+  }
+
   // printf("Flag");
   // for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
   // printf("\n");
@@ -419,6 +482,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   // for (int i = 0; i < gapdata->n; ++i){
   //   printf("job[%d] %d\n", i,vdata->bestsol[i]);
   // }
+  
 
   free(isAssigned);
 
