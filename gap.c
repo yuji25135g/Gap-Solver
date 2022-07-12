@@ -133,15 +133,15 @@ int check_feasibility(Sol *sol, GAPdata *gapdata) {
     temp = rest_b[i];
     if(temp<0){penal -= temp;}
   }
-  printf("recomputed cost = %d\n", cost);
+  // printf("---recomputed cost = %d\n", cost);
   if(penal>0){
-    printf("INFEASIBLE!!\n");
-    printf(" resource left:");
-    for(i=0; i<gapdata->m; i++){printf(" %3d", rest_b[i]);}
-    printf("\n");
+    // printf("INFEASIBLE!!\n");
+    // printf("resource left:");
+    // for(i=0; i<gapdata->m; i++){printf(" %3d", rest_b[i]);}
+    // printf("\n");
     return 0;
   } else{
-    return 1;
+    return 1; //実行可能だと1を返す
   }
 
     free((void *) rest_b);
@@ -369,7 +369,62 @@ int evaluate_func(Sol *sol, GAPdata *gapdata){
     val2 += max(assigned_resource[i]-gapdata->b[i], 0);
   }
 
-  return val1 + val2;
+  // if (val2 == 0){
+  //   printf("feasible!");
+  // } else {
+  //   printf("infeasible!");
+  // }
+  // printf("  cost = %f\n", val1 + (0.0001 * val2));
+
+  return val1 + (0.0001 * val2);
+}
+
+/***** Local Search **********************************************************/
+void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
+  int Flag = 1; //最適解が変更→1, 最適解が変更されなかった→0
+  int i; //agentインデックス 
+  int j; //jobインデックス 
+  int k;
+  Sol nearsol; //近傍
+  nearsol.sol = (int*) malloc_e(gapdata->n * sizeof(int));
+  nearsol.value = 0;
+
+  for (j = 0; j < gapdata->m; ++j){
+    for (i = 0; i < gapdata->n; ++i){
+      nearsol.sol[i] = current->sol[i];
+    }
+  }
+
+  while (Flag == 1){
+    Flag = 0;
+    for (j = 0; j < gapdata->m; ++j){
+      for (i = 0; i < gapdata->n; ++i){
+        nearsol.sol[i] = j;
+        nearsol.value = evaluate_func(&nearsol, gapdata);
+
+        //実行可能判定
+        if (check_feasibility(&nearsol, gapdata)){
+          if (feasopt->value > nearsol.value || feasopt->value == 0){
+            for (k = 0; k < gapdata->n; ++k){
+              feasopt->sol[k] = nearsol.sol[k];
+            }
+            feasopt->value = nearsol.value;
+          }
+        }
+        //評価関数最小判定
+        if (opt->value > nearsol.value){
+          for (k = 0; k < gapdata->n; ++k){
+              opt->sol[k] = nearsol.sol[k];
+            }
+          opt->value = nearsol.value;
+          Flag = 1;
+        }
+        nearsol.sol[i] = current->sol[i];
+      }
+    }
+    printf("opt_value = %d\n", opt->value);
+
+  }
 }
 
 /***** write your algorithm here *********************************************/
@@ -508,11 +563,12 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     feasopt.value = func;
   }
 
-  
+  local_search(&current, &opt, &feasopt, gapdata);
+
 
   //最適解の割当
   for (int i = 0; i < gapdata->n; ++i){
-    vdata->bestsol[i] = opt.sol[i]; //局所探索が実装できたらfeasoptにする
+    vdata->bestsol[i] = feasopt.sol[i]; 
   }
 
   // printf("Flag");
@@ -522,7 +578,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   // for (int i = 0; i < gapdata->n; ++i){
   //   printf("job[%d] %d\n", i,vdata->bestsol[i]);
   // }
-  
 
   free(isAssigned);
 
