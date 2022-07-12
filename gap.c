@@ -341,6 +341,37 @@ int compare(const void *n1, const void *n2) {
 	}
 }
 
+/***** max関数 ****************************************************************/
+int max(int a, int b) {
+    if (a > b)
+        return a;
+    else
+        return b;
+}
+
+/***** evaluate function ******************************************************/
+int evaluate_func(Sol *sol, GAPdata *gapdata){
+  int val1 = 0; //評価関数第一項の値
+  int val2 = 0; //評価関数第二項の値
+  int *assigned_resource; //エージェントiに割当られたjobの総和資源量 
+  assigned_resource = (int*) malloc_e(gapdata->m * sizeof(int));
+  int j; //jobインデックス 
+  int i; //agentインデックス 
+
+  //評価関数第一項を計算
+  for (j = 0; j < gapdata->n; ++j){
+    val1 += gapdata->c[sol->sol[j]][j];
+    assigned_resource[sol->sol[j]] += gapdata->a[sol->sol[j]][j];
+  }
+
+  //評価関数第二項を計算
+  for (i = 0; i < gapdata->m; ++i){
+    val2 += max(assigned_resource[i]-gapdata->b[i], 0);
+  }
+
+  return val1 + val2;
+}
+
 /***** write your algorithm here *********************************************/
 void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
 
@@ -474,6 +505,8 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   for (int i = 0; i < gapdata->n; ++i){
     vdata->bestsol[i] = opt.sol[i]; //局所探索が実装できたらfeasoptにする
   }
+  int func = evaluate_func(&opt, gapdata);
+  printf("\nevaluatefunc = %d\n", func);
 
   // printf("Flag");
   // for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
