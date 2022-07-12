@@ -494,19 +494,26 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     isAssigned[minJob] = 1;
   }
 
+  //評価関数の計算と保存
+  int func = evaluate_func(&opt, gapdata);
+  printf("\nevaluatefunc = %d\n", func);
+  opt.value = func;
+  current.value = func;
+
   //実行可能解であれば、解を保存する
   if (check_feasibility(&current, gapdata)){
     for (int i = 0; i < gapdata->n; ++i){
       feasopt.sol[i] = opt.sol[i];
     }
+    feasopt.value = func;
   }
+
+  
 
   //最適解の割当
   for (int i = 0; i < gapdata->n; ++i){
     vdata->bestsol[i] = opt.sol[i]; //局所探索が実装できたらfeasoptにする
   }
-  int func = evaluate_func(&opt, gapdata);
-  printf("\nevaluatefunc = %d\n", func);
 
   // printf("Flag");
   // for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
