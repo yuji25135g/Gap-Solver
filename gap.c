@@ -381,8 +381,8 @@ int evaluate_func(Sol *sol, GAPdata *gapdata){
   //   }
   //   exit(0);
   // }
-
-  return val1 + (20 * val2);
+  printf("val1 = %d, val2 = %d\n", val1, val2);
+  return val1 + (600 * val2);
 }
 
 /***** Local Search **********************************************************/
@@ -446,7 +446,7 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
       }
     }
     current->value = nearbest.value;
-    printf("current_value = %d\n", current->value);
+    // printf("current_value = %d\n", current->value);
   }
 }
 /***** get random number *****************************************************/
