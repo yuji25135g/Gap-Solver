@@ -351,8 +351,8 @@ int max(int a, int b) {
 }
 
 /***** evaluate function ******************************************************/
-float a = 1.0; //評価関数用パラメータ
-float d = 1.0; //パラメータaの構成パラメータ
+float a = 20.0; //評価関数用パラメータ
+float d = 0.1; //パラメータaの構成パラメータ
 int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam){
   int val1 = 0; //評価関数第一項の値
   int val2 = 0; //評価関数第二項の値
