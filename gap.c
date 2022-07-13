@@ -141,6 +141,7 @@ int check_feasibility(Sol *sol, GAPdata *gapdata) {
     // printf("\n");
     return 0;
   } else{
+    // printf("FEASIBLE!!\n");
     return 1; //実行可能だと1を返す
   }
 
@@ -350,13 +351,15 @@ int max(int a, int b) {
 }
 
 /***** evaluate function ******************************************************/
-int evaluate_func(Sol *sol, GAPdata *gapdata){
+float a = 1.0; //評価関数用パラメータ
+float d = 1.0; //パラメータaの構成パラメータ
+int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam){
   int val1 = 0; //評価関数第一項の値
   int val2 = 0; //評価関数第二項の値
   int *assigned_resource; //エージェントiに割当られたjobの総和資源量 
   assigned_resource = (int*) malloc_e(gapdata->m * sizeof(int));
   int j; //jobインデックス 
-  int i; //agentインデックス 
+  int i; //agentインデックス
 
   //評価関数第一項を計算
   for (j = 0; j < gapdata->n; ++j){
@@ -369,20 +372,18 @@ int evaluate_func(Sol *sol, GAPdata *gapdata){
     val2 += max(assigned_resource[i]-gapdata->b[i], 0);
   }
 
-  // if (val2 == 0){
-  //   // printf("feasible!");
-  // } else {
-  //   printf("infeasible!\n");
-  // }
-  // printf("  cost = %f\n", val1 + (0.0001 * val2));
-  // if ((val1 + (1 * val2)) < 0){
-  //   for (i = 0; i < gapdata->n; ++i){
-  //     printf("job[%d] %d\n", i,sol->sol[i]);
-  //   }
-  //   exit(0);
-  // }
+  //パラメータ更新
+  if (isChangeParam && val2 == 0) { //実行可能解のとき
+    a = a/(1+d);
+    printf("param = %f\n", a);
+  } else if (isChangeParam && val2 > 0) {
+    a = a*(1+d);
+    printf("param = %f\n", a);
+  }
 
-  return val1 + (20 * val2);
+  return val1 + (a * val2);
+
+  
 }
 
 /***** Local Search **********************************************************/
@@ -411,7 +412,7 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
     for (j = 0; j < gapdata->m; ++j){
       for (i = 0; i < gapdata->n; ++i){
         nearsol.sol[i] = j;
-        nearsol.value = evaluate_func(&nearsol, gapdata);
+        nearsol.value = evaluate_func(&nearsol, gapdata, 0);
 
         //実行可能判定
         if (check_feasibility(&nearsol, gapdata)){
@@ -446,7 +447,10 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
       }
     }
     current->value = nearbest.value;
-    printf("current_value = %d\n", current->value);
+    evaluate_func(current, gapdata, 1);
+    printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
+
+    //  printf("current_value = %d\n", current->value);
   }
 }
 /***** get random number *****************************************************/
@@ -460,19 +464,6 @@ int get_rand(int max, int min, int *seed){
 
 /***** write your algorithm here *********************************************/
 void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
-
-  /* Here is an example of repeating a loop until the timelimit is reached
-     or the maximum iteration number is reached. Uncomment below and try it.*/
-
-  // int itr, itr_max, j;
-  // itr_max = 500000000; 
-  // for(itr = 0; itr < itr_max && cpu_time() - vdata->starttime <= param->timelim; itr++) {
-  //   for(j = 0; j < gapdata->n; j++) {
-  //     vdata->bestsol[j] = j % gapdata->m;
-  //   }
-  // }
-  // printf("the iteration count after the loop ends: %d\n", itr);
-
 
   /*
     Write your program here. Of course you can add your subroutines
@@ -495,7 +486,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
 	vdata->bestsol[2] = 2
 	vdata->bestsol[3] = 0.
   */
-
 
   //実行可能解の中で評価間数値が最小となる解
   Sol feasopt;
@@ -581,7 +571,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   }
 
   //評価関数の計算と保存
-  int func = evaluate_func(&opt, gapdata);
+  int func = evaluate_func(&opt, gapdata, 0);
   printf("\nevaluatefunc = %d\n", func);
   opt.value = func;
   current.value = func;
@@ -609,7 +599,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       j = get_rand(gapdata->n, 0, &seedj);
       current.sol[j] = i;
     }
-    current.value = evaluate_func(&current, gapdata);
+    current.value = evaluate_func(&current, gapdata, 0);
     printf("kick\n");
     local_search(&current, &opt, &feasopt, gapdata);
   }
