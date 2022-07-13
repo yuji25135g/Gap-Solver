@@ -375,10 +375,10 @@ int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam){
   //パラメータ更新
   if (isChangeParam && val2 == 0) { //実行可能解のとき
     a = a/(1+d);
-    printf("param = %f\n", a);
+    // printf("param = %f\n", a);
   } else if (isChangeParam && val2 > 0) {
     a = a*(1+d);
-    printf("param = %f\n", a);
+    // printf("param = %f\n", a);
   }
 
   return val1 + (a * val2);
@@ -448,9 +448,9 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
     }
     current->value = nearbest.value;
     evaluate_func(current, gapdata, 1);
-    printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
+    // printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
 
-    //  printf("current_value = %d\n", current->value);
+     printf("current_value = %d\n", current->value);
   }
 }
 /***** get random number *****************************************************/
@@ -589,8 +589,8 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   int seedi = 1;
   int seedj = 1;
   int kick = 3; //キックの回数
-  // while ((cpu_time() - 1 - vdata->starttime) < param->timelim * 0.1) {
-  for (int k = 0; k < 3; ++k){
+  while ((cpu_time() - vdata->starttime) < param->timelim ) {
+  // for (int k = 0; k < 3; ++k){
     for (int l = 0; l < kick; ++l){
       int i = 0; //agent
       int j = 0; //job
@@ -602,10 +602,8 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     current.value = evaluate_func(&current, gapdata, 0);
     printf("kick\n");
     local_search(&current, &opt, &feasopt, gapdata);
-  }
   // }
-  //気になること1. cputimeは本当に秒を返してる？10秒じゃない？　2. キックの方法。randを使いたくない使うならseed指定
-
+  }
 
   //最適解の割当
   for (int i = 0; i < gapdata->n; ++i){
