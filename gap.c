@@ -392,7 +392,7 @@ int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam, int isOnlyCost)
 }
 
 /***** Local Search **********************************************************/
-void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
+void local_search(Sol *current, Sol *feasopt, GAPdata *gapdata){
   int Flag = 1; //最適解が変更→1, 最適解が変更されなかった→0
   int i; //agentインデックス 
   int j; //jobインデックス 
@@ -430,13 +430,6 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
             }
             feasopt->costValue = nearsol.costValue;
           }
-        }
-        //opt更新
-        if (opt->value > nearsol.value){
-          for (k = 0; k < gapdata->n; ++k){
-              opt->sol[k] = nearsol.sol[k];
-            }
-          opt->value = nearsol.value;
         }
         //nearbest更新
         if (nearbest.value > nearsol.value){
@@ -500,11 +493,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   feasopt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
   feasopt.value = 0; //使わない
   feasopt.costValue = 0; //使う
-  //評価間数値が最小となる解---そもそもいらない？？？
-  Sol opt;
-  opt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
-  opt.value = 0;
-  opt.costValue = 0; //使わない
   //現在の解
   Sol current;
   current.sol = (int*) malloc_e(gapdata->n * sizeof(int));
@@ -563,10 +551,8 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       agent[minAgent].current += 1;
     }
 
-    //opt->solに割当
     int minJob = agent[minAgent].aind[agent[minAgent].current];
     // printf("\nminAgent = %d minJob = %d\n", minAgent, minJob);
-    opt.sol[minJob] = minAgent;
     current.sol[minJob] = minAgent;
 
     //bresの再計算
@@ -582,9 +568,8 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   }
 
   //評価関数の計算と保存
-  int func = evaluate_func(&opt, gapdata, 0, 0);
+  int func = evaluate_func(&current, gapdata, 0, 0);
   printf("\nevaluatefunc = %d\n", func);
-  opt.value = func;
   current.value = func;
 
   //実行可能解であれば、解を保存する
@@ -595,7 +580,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     feasopt.costValue = evaluate_func(&feasopt, gapdata, 0, 1);
   }
 
-  local_search(&current, &opt, &feasopt, gapdata);
+  local_search(&current, &feasopt, gapdata);
 
   int seedi = 1;
   int seedj = 1;
@@ -612,7 +597,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     }
     current.value = evaluate_func(&current, gapdata, 0, 0);
     printf("kick\n");
-    local_search(&current, &opt, &feasopt, gapdata);
+    local_search(&current, &feasopt, gapdata);
   // }
   }
 
