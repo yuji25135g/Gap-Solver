@@ -66,7 +66,8 @@ typedef struct {
 
 typedef struct {
   int *sol; 
-  int value;
+  int value; //コストにペナルティ項も追加した評価指標
+  int costValue; //コストのみを計算した評価指標
 } Sol;
 
 /*************************** functions ***************************************/
@@ -353,7 +354,7 @@ int max(int a, int b) {
 /***** evaluate function ******************************************************/
 float a = 20.0; //評価関数用パラメータ
 float d = 0.1; //パラメータaの構成パラメータ
-int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam){
+int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam, int isOnlyCost){
   int val1 = 0; //評価関数第一項の値
   int val2 = 0; //評価関数第二項の値
   int *assigned_resource; //エージェントiに割当られたjobの総和資源量 
@@ -381,7 +382,11 @@ int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam){
     // printf("param = %f\n", a);
   }
 
-  return val1 + (a * val2);
+  if (isOnlyCost) {
+    return val1;
+  } else {
+    return val1 + (a * val2);
+  }
 
   
 }
@@ -395,9 +400,11 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
   Sol nearsol; //近傍
   nearsol.sol = (int*) malloc_e(gapdata->n * sizeof(int));
   nearsol.value = 0;
+  nearsol.costValue = 0;
   Sol nearbest; //近傍の中での最適解
   nearbest.sol = (int*) malloc_e(gapdata->n * sizeof(int));
   nearbest.value = 0;
+  nearbest.costValue = 0;
 
   while (Flag == 1){
     Flag = 0;
@@ -412,15 +419,16 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
     for (j = 0; j < gapdata->m; ++j){
       for (i = 0; i < gapdata->n; ++i){
         nearsol.sol[i] = j;
-        nearsol.value = evaluate_func(&nearsol, gapdata, 0);
+        nearsol.value = evaluate_func(&nearsol, gapdata, 0, 0);
+        nearsol.costValue = evaluate_func(&nearsol, gapdata, 0, 1);
 
         //実行可能判定
         if (check_feasibility(&nearsol, gapdata)){
-          if (feasopt->value > nearsol.value || feasopt->value == 0){
+          if (feasopt->costValue > nearsol.costValue || feasopt->costValue == 0){
             for (k = 0; k < gapdata->n; ++k){
               feasopt->sol[k] = nearsol.sol[k];
             }
-            feasopt->value = nearsol.value;
+            feasopt->costValue = nearsol.costValue;
           }
         }
         //opt更新
@@ -447,7 +455,7 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
       }
     }
     current->value = nearbest.value;
-    evaluate_func(current, gapdata, 1);
+    evaluate_func(current, gapdata, 1, 0);
     // printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
 
      printf("current_value = %d\n", current->value);
@@ -490,15 +498,18 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   //実行可能解の中で評価間数値が最小となる解
   Sol feasopt;
   feasopt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
-  feasopt.value = 0;
-  //評価間数値が最小となる解
+  feasopt.value = 0; //使わない
+  feasopt.costValue = 0; //使う
+  //評価間数値が最小となる解---そもそもいらない？？？
   Sol opt;
   opt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
   opt.value = 0;
+  opt.costValue = 0; //使わない
   //現在の解
   Sol current;
   current.sol = (int*) malloc_e(gapdata->n * sizeof(int));
-  current.value = 0;
+  current.value = 0; //使う
+  current.costValue = 0;
 
   //Flagの作成(jobが割り当てられたかの確認)
   int* isAssigned = (int*) malloc_e(gapdata->n * sizeof(int));
@@ -571,7 +582,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   }
 
   //評価関数の計算と保存
-  int func = evaluate_func(&opt, gapdata, 0);
+  int func = evaluate_func(&opt, gapdata, 0, 0);
   printf("\nevaluatefunc = %d\n", func);
   opt.value = func;
   current.value = func;
@@ -579,9 +590,9 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   //実行可能解であれば、解を保存する
   if (check_feasibility(&current, gapdata)){
     for (int i = 0; i < gapdata->n; ++i){
-      feasopt.sol[i] = opt.sol[i];
+      feasopt.sol[i] = current.sol[i];
     }
-    feasopt.value = func;
+    feasopt.costValue = evaluate_func(&feasopt, gapdata, 0, 1);
   }
 
   local_search(&current, &opt, &feasopt, gapdata);
@@ -589,7 +600,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   int seedi = 1;
   int seedj = 1;
   int kick = 3; //キックの回数
-  while ((cpu_time() - vdata->starttime) < param->timelim ) {
+  while ((cpu_time() -0.2 - vdata->starttime) < param->timelim ) {
   // for (int k = 0; k < 3; ++k){
     for (int l = 0; l < kick; ++l){
       int i = 0; //agent
@@ -599,7 +610,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       j = get_rand(gapdata->n, 0, &seedj);
       current.sol[j] = i;
     }
-    current.value = evaluate_func(&current, gapdata, 0);
+    current.value = evaluate_func(&current, gapdata, 0, 0);
     printf("kick\n");
     local_search(&current, &opt, &feasopt, gapdata);
   // }
