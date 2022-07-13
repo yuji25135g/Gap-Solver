@@ -600,7 +600,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   int seedi = 1;
   int seedj = 1;
   int kick = 3; //キックの回数
-  while ((cpu_time() -0.2 - vdata->starttime) < param->timelim ) {
+  while ((cpu_time() - vdata->starttime) < param->timelim ) {
   // for (int k = 0; k < 3; ++k){
     for (int l = 0; l < kick; ++l){
       int i = 0; //agent
