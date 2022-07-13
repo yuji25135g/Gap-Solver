@@ -352,9 +352,7 @@ int max(int a, int b) {
 }
 
 /***** evaluate function ******************************************************/
-float a = 20.0; //評価関数用パラメータ
-float d = 0.1; //パラメータaの構成パラメータ
-int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam, int isOnlyCost){
+int evaluate_func(Sol *sol, GAPdata *gapdata, int isOnlyCost){
   int val1 = 0; //評価関数第一項の値
   int val2 = 0; //評価関数第二項の値
   int *assigned_resource; //エージェントiに割当られたjobの総和資源量 
@@ -373,19 +371,10 @@ int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam, int isOnlyCost)
     val2 += max(assigned_resource[i]-gapdata->b[i], 0);
   }
 
-  //パラメータ更新
-  if (isChangeParam && val2 == 0) { //実行可能解のとき
-    a = a/(1+d);
-    // printf("param = %f\n", a);
-  } else if (isChangeParam && val2 > 0) {
-    a = a*(1+d);
-    // printf("param = %f\n", a);
-  }
-
   if (isOnlyCost) {
     return val1;
   } else {
-    return val1 + (a * val2);
+    return val1 + (20 * val2);
   }
 
   
@@ -419,8 +408,8 @@ void local_search(Sol *current, Sol *feasopt, GAPdata *gapdata){
     for (j = 0; j < gapdata->m; ++j){
       for (i = 0; i < gapdata->n; ++i){
         nearsol.sol[i] = j;
-        nearsol.value = evaluate_func(&nearsol, gapdata, 0, 0);
-        nearsol.costValue = evaluate_func(&nearsol, gapdata, 0, 1);
+        nearsol.value = evaluate_func(&nearsol, gapdata, 0);
+        nearsol.costValue = evaluate_func(&nearsol, gapdata, 1);
 
         //実行可能判定
         if (check_feasibility(&nearsol, gapdata)){
@@ -448,7 +437,7 @@ void local_search(Sol *current, Sol *feasopt, GAPdata *gapdata){
       }
     }
     current->value = nearbest.value;
-    evaluate_func(current, gapdata, 1, 0);
+    evaluate_func(current, gapdata, 0);
     // printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
 
      printf("current_value = %d\n", current->value);
@@ -568,7 +557,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   }
 
   //評価関数の計算と保存
-  int func = evaluate_func(&current, gapdata, 0, 0);
+  int func = evaluate_func(&current, gapdata, 0);
   printf("\nevaluatefunc = %d\n", func);
   current.value = func;
 
@@ -577,7 +566,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     for (int i = 0; i < gapdata->n; ++i){
       feasopt.sol[i] = current.sol[i];
     }
-    feasopt.costValue = evaluate_func(&feasopt, gapdata, 0, 1);
+    feasopt.costValue = evaluate_func(&feasopt, gapdata, 1);
   }
 
   local_search(&current, &feasopt, gapdata);
@@ -595,7 +584,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       j = get_rand(gapdata->n, 0, &seedj);
       current.sol[j] = i;
     }
-    current.value = evaluate_func(&current, gapdata, 0, 0);
+    current.value = evaluate_func(&current, gapdata, 0);
     printf("kick\n");
     local_search(&current, &feasopt, gapdata);
   // }
