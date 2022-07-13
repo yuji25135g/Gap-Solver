@@ -370,13 +370,19 @@ int evaluate_func(Sol *sol, GAPdata *gapdata){
   }
 
   // if (val2 == 0){
-  //   printf("feasible!");
+  //   // printf("feasible!");
   // } else {
-  //   printf("infeasible!");
+  //   printf("infeasible!\n");
   // }
   // printf("  cost = %f\n", val1 + (0.0001 * val2));
+  // if ((val1 + (1 * val2)) < 0){
+  //   for (i = 0; i < gapdata->n; ++i){
+  //     printf("job[%d] %d\n", i,sol->sol[i]);
+  //   }
+  //   exit(0);
+  // }
 
-  return val1 + (0.0001 * val2);
+  return val1 + (20 * val2);
 }
 
 /***** Local Search **********************************************************/
@@ -388,15 +394,20 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
   Sol nearsol; //近傍
   nearsol.sol = (int*) malloc_e(gapdata->n * sizeof(int));
   nearsol.value = 0;
-
-  for (j = 0; j < gapdata->m; ++j){
-    for (i = 0; i < gapdata->n; ++i){
-      nearsol.sol[i] = current->sol[i];
-    }
-  }
+  Sol nearbest; //近傍の中での最適解
+  nearbest.sol = (int*) malloc_e(gapdata->n * sizeof(int));
+  nearbest.value = 0;
 
   while (Flag == 1){
     Flag = 0;
+    for (j = 0; j < gapdata->m; ++j){
+      for (i = 0; i < gapdata->n; ++i){
+        nearsol.sol[i] = current->sol[i];
+        nearbest.sol[i] = current->sol[i];
+      }
+    }
+    nearsol.value = current->value;
+    nearbest.value = current->value;
     for (j = 0; j < gapdata->m; ++j){
       for (i = 0; i < gapdata->n; ++i){
         nearsol.sol[i] = j;
@@ -411,20 +422,40 @@ void local_search(Sol *current, Sol *opt, Sol *feasopt, GAPdata *gapdata){
             feasopt->value = nearsol.value;
           }
         }
-        //評価関数最小判定
+        //opt更新
         if (opt->value > nearsol.value){
           for (k = 0; k < gapdata->n; ++k){
               opt->sol[k] = nearsol.sol[k];
             }
           opt->value = nearsol.value;
+        }
+        //nearbest更新
+        if (nearbest.value > nearsol.value){
+          for (k = 0; k < gapdata->n; ++k){
+              nearbest.sol[k] = nearsol.sol[k];
+            }
+          nearbest.value = nearsol.value;
           Flag = 1;
         }
         nearsol.sol[i] = current->sol[i];
       }
     }
-    printf("opt_value = %d\n", opt->value);
-
+    for (j = 0; j < gapdata->m; ++j){
+      for (i = 0; i < gapdata->n; ++i){
+        current->sol[i] = nearbest.sol[i];
+      }
+    }
+    current->value = nearbest.value;
+    printf("current_value = %d\n", current->value);
   }
+}
+/***** get random number *****************************************************/
+int get_rand(int max, int min, int *seed){
+  int val;
+  srand(*seed);
+  val = min + (rand()%(max - min));
+  *seed = rand();
+  return val;
 }
 
 /***** write your algorithm here *********************************************/
@@ -564,6 +595,26 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
   }
 
   local_search(&current, &opt, &feasopt, gapdata);
+
+  int seedi = 1;
+  int seedj = 1;
+  int kick = 3; //キックの回数
+  // while ((cpu_time() - 1 - vdata->starttime) < param->timelim * 0.1) {
+  for (int k = 0; k < 3; ++k){
+    for (int l = 0; l < kick; ++l){
+      int i = 0; //agent
+      int j = 0; //job
+
+      i = get_rand(gapdata->m, 0, &seedi);
+      j = get_rand(gapdata->n, 0, &seedj);
+      current.sol[j] = i;
+    }
+    current.value = evaluate_func(&current, gapdata);
+    printf("kick\n");
+    local_search(&current, &opt, &feasopt, gapdata);
+  }
+  // }
+  //気になること1. cputimeは本当に秒を返してる？10秒じゃない？　2. キックの方法。randを使いたくない使うならseed指定
 
 
   //最適解の割当
