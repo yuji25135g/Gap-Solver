@@ -442,7 +442,7 @@ void local_search(Sol *current, Sol *feasopt, GAPdata *gapdata){
     current->value = nearbest.value;
     evaluate_func(current, gapdata, 1, 0);
 
-    printf("current_value = %d\n", current->value);
+    // printf("current_value = %d\n", current->value);
   }
 }
 /***** get random number *****************************************************/
@@ -584,7 +584,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       current.sol[j] = i;
     }
     current.value = evaluate_func(&current, gapdata, 0, 0);
-    printf("kick\n");
+    // printf("kick\n");
     local_search(&current, &feasopt, gapdata);
   }
 
