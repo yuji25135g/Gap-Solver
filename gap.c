@@ -134,15 +134,9 @@ int check_feasibility(Sol *sol, GAPdata *gapdata) {
     temp = rest_b[i];
     if(temp<0){penal -= temp;}
   }
-  // printf("---recomputed cost = %d\n", cost);
   if(penal>0){
-    // printf("INFEASIBLE!!\n");
-    // printf("resource left:");
-    // for(i=0; i<gapdata->m; i++){printf(" %3d", rest_b[i]);}
-    // printf("\n");
     return 0;
   } else{
-    // printf("FEASIBLE!!\n");
     return 1; //実行可能だと1を返す
   }
 
@@ -376,10 +370,8 @@ int evaluate_func(Sol *sol, GAPdata *gapdata, int isChangeParam, int isOnlyCost)
   //パラメータ更新
   if (isChangeParam && val2 == 0) { //実行可能解のとき
     a = a/(1+d);
-    // printf("param = %f\n", a);
   } else if (isChangeParam && val2 > 0) {
     a = a*(1+d);
-    // printf("param = %f\n", a);
   }
 
   if (isOnlyCost) {
@@ -449,9 +441,8 @@ void local_search(Sol *current, Sol *feasopt, GAPdata *gapdata){
     }
     current->value = nearbest.value;
     evaluate_func(current, gapdata, 1, 0);
-    // printf("isFEASIBLE? = %d\n",check_feasibility(current, gapdata));
 
-     printf("current_value = %d\n", current->value);
+    printf("current_value = %d\n", current->value);
   }
 }
 /***** get random number *****************************************************/
@@ -488,15 +479,15 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
 	vdata->bestsol[3] = 0.
   */
 
-  //実行可能解の中で評価間数値が最小となる解
+  //実行可能解の中でコスト最小となる解
   Sol feasopt;
   feasopt.sol = (int*) malloc_e(gapdata->n * sizeof(int));
-  feasopt.value = 0; //使わない
-  feasopt.costValue = 0; //使う
+  feasopt.value = 0; 
+  feasopt.costValue = 0; 
   //現在の解
   Sol current;
   current.sol = (int*) malloc_e(gapdata->n * sizeof(int));
-  current.value = 0; //使う
+  current.value = 0; 
   current.costValue = 0;
 
   //Flagの作成(jobが割り当てられたかの確認)
@@ -540,7 +531,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     for (int i = 0; i < gapdata->m; ++i){
       possiblemin[i] = (float)agent[i].aagt[agent[i].aind[agent[i].current]]/agent[i].bres;
     }
-    // for(int i = 0; i < gapdata->m; ++i){printf("possibleMin[] =  %f ",possiblemin[i]);}
 
     //a/bresが最小になるエージェントを特定
     int minAgent = minIndex( possiblemin, gapdata->m );
@@ -552,7 +542,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     }
 
     int minJob = agent[minAgent].aind[agent[minAgent].current];
-    // printf("\nminAgent = %d minJob = %d\n", minAgent, minJob);
     current.sol[minJob] = minAgent;
 
     //bresの再計算
@@ -561,7 +550,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
       agent[minAgent].bres = 0.000000001;
       printf("over!!!");
     }
-    // printf("bres = %f\n", agent[minAgent].bres);
 
     //Flagを立てる 
     isAssigned[minJob] = 1;
@@ -579,14 +567,14 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     }
     feasopt.costValue = evaluate_func(&feasopt, gapdata, 0, 1);
   }
-
+  //初回のLocalSearch
   local_search(&current, &feasopt, gapdata);
 
+  //反復局所探索
   int seedi = 1;
   int seedj = 1;
   int kick = 3; //キックの回数
   while ((cpu_time() - vdata->starttime) < param->timelim ) {
-  // for (int k = 0; k < 3; ++k){
     for (int l = 0; l < kick; ++l){
       int i = 0; //agent
       int j = 0; //job
@@ -598,7 +586,6 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     current.value = evaluate_func(&current, gapdata, 0, 0);
     printf("kick\n");
     local_search(&current, &feasopt, gapdata);
-  // }
   }
 
   //最適解の割当
@@ -606,17 +593,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
     vdata->bestsol[i] = feasopt.sol[i]; 
   }
 
-  // printf("Flag");
-  // for (int i = 0; i < gapdata->n; ++i ){ printf(" %d", isAssigned[i]);}
-  // printf("\n");
-  // printf("bestsol\n");
-  // for (int i = 0; i < gapdata->n; ++i){
-  //   printf("job[%d] %d\n", i,vdata->bestsol[i]);
-  // }
-
   free(isAssigned);
-
-
 }
 
 /***** main ******************************************************************/
