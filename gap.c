@@ -557,7 +557,7 @@ void my_algorithm(Vdata *vdata, GAPdata *gapdata, Param *param) {
 
   //評価関数の計算と保存
   int func = evaluate_func(&current, gapdata, 0, 0);
-  printf("\nevaluatefunc = %d\n", func);
+  // printf("\nevaluatefunc = %d\n", func);
   current.value = func;
 
   //実行可能解であれば、解を保存する
